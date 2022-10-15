@@ -43,7 +43,7 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
     #endif
     
     // MARK: - Init
-    /// Create a new state machine with the given initial state.
+    /// Create a new machine with the given initial state.
     ///
     /// - Parameters:
     ///   - state: The initial state for the newly constructed machine.
@@ -153,6 +153,13 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         }
     }
     // MARK: Add Routes
+    /// Add an array of routes based on an event. These route will be constructed automatically given the transition and condition.
+    ///
+    /// - Parameters:
+    ///   - event: The event to trigger the routes.
+    ///   - transitions: The array of transitions to associate with the event in the route.
+    ///   - condition: The condition to check when validating the route.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: E,
@@ -161,6 +168,14 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
     ) -> Disposable {
         self.addRoutes(event: .some(event), transitions: transitions, condition: condition)
     }
+    /// Add an array of routes based on a wrapped event. These routes will be constructed automatically given the transition and
+    /// condition.
+    ///
+    /// - Parameters:
+    ///   - event: The wrapped event to trigger the routes.
+    ///   - transitions: The array of transitions to associate with the event in the route.
+    ///   - condition: The condition to check when validating the route.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: Event<E>,
@@ -170,10 +185,22 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         let routes: [Route] = transitions.map { .init(transition: $0, condition: condition) }
         return self.addRoutes(event: event, routes: routes)
     }
+    /// Add an array of routes based on an event.
+    ///
+    /// - Parameters:
+    ///   - event: The event to trigger the routes.
+    ///   - routes: The array of routes to add in association with this event.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(event: E, routes: [Route<S, E>]) -> Disposable {
         self.addRoutes(event: .some(event), routes: routes)
     }
+    /// Add an array of routes based on a wrapped event.
+    ///
+    /// - Parameters:
+    ///   - event: The event to trigger the routes.
+    ///   - routes: The array of routes to add in association with this event.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(event: Event<E>, routes: [Route<S, E>]) -> Disposable {
         let disposables = routes.map { _addRoute(event: event, route: $0) }
@@ -181,6 +208,14 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
             disposables.forEach { $0.dispose() }
         }
     }
+    /// Add routes based on an event with an associated handler. The routes will be constructed automatically.
+    ///
+    /// - Parameters:
+    ///   - event: The event to associate with the routes.
+    ///   - transitions: The array of transitions to construct in routes.
+    ///   - condition: The condition to associate with the route.
+    ///   - handler: The handler to associate with the newly created routes.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: E,
@@ -195,6 +230,14 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
             handler: handler
         )
     }
+    /// Add routes based on a wrapped event with an associated handler. The routes will be constructed automatically.
+    ///
+    /// - Parameters:
+    ///   - event: The wrapped event to associate with the routes.
+    ///   - transitions: The array of transitions to construct in routes.
+    ///   - condition: The condition to associate with the route.
+    ///   - handler: The handler to associate with the newly created routes.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: Event<E>,
@@ -205,6 +248,13 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         let routes: [Route] = transitions.map { .init(transition: $0, condition: condition) }
         return self.addRoutes(event: event, routes: routes, handler: handler)
     }
+    /// Add an array of routes based on an event with an associated handler.
+    ///
+    /// - Parameters:
+    ///   - event: The event to associate with the routes.
+    ///   - routes: The array of routes to associate with the event.
+    ///   - handler: The handler to associate with the routes.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: E,
@@ -213,6 +263,13 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
     ) -> Disposable {
         self.addRoutes(event: .some(event), routes: routes, handler: handler)
     }
+    /// Add an array of routes based on a wrapped event with an associated handler.
+    ///
+    /// - Parameters:
+    ///   - event: The wrapped event to associate with the routes.
+    ///   - routes: The array of routes to associate with the event.
+    ///   - handler: The handler to associate with the routes.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRoutes(
         event: Event<E>,
@@ -227,6 +284,10 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         }
     }
     // MARK: - AddRouteMapping
+    /// Add a closure-based route to this machine.
+    ///
+    /// - Parameter mapping: The closure to treat as a route within this machine.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRouteMapping(_ mapping: @escaping RouteMapping) -> Disposable {
         let key = _createUniqueString()
@@ -236,6 +297,12 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
             self?._removeRouteMapping(id)
         }
     }
+    /// Add a closure-based route to this machine with an associated handler.
+    /// - Parameters:
+    ///   - mapping: The closure to treat as a route within this machine.
+    ///   - order: The handler order to assign to this closure.
+    ///   - handler: The handler to associate with the given mapping.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addRouteMapping(
         _ mapping: @escaping RouteMapping,
@@ -256,6 +323,13 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         }
     }
     // MARK: - Handler
+    /// Add an event handler to this machine.
+    ///
+    /// - Parameters:
+    ///   - event: The event to associate with the new handler.
+    ///   - order: The handler order to associate with the closure.
+    ///   - handler: The event handler.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addHandler(
         event: E,
@@ -264,6 +338,13 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
     ) -> Disposable {
         self.addHandler(event: .some(event), order: order, handler: handler)
     }
+    /// Add a wrapped event handler to this machine.
+    ///
+    /// - Parameters:
+    ///   - event: The wrapped event to associate with the new handler.
+    ///   - order: The handler order to associate with the closure.
+    ///   - handler: The event handler.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addHandler(
         event: Event<E>,
@@ -278,6 +359,12 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         }
     }
     // MARK: - Error Handler
+    /// Add an error handler to this machine.
+    ///
+    /// - Parameters:
+    ///   - order: The handler order to associate with the closure.
+    ///   - handler: The error handler.
+    /// - Returns: A reference to the runtime disposable data that will be freed when this state machine is no longer in use.
     @discardableResult
     public func addErrorHandler(
         order: HandlerOrder = _defaultHandlerOrder,
@@ -292,11 +379,23 @@ public class Machine<S: StateProtocol, E: EventProtocol> {
         }
     }
     // MARK: - Operators
+    /// An operator to trigger state changes by event.
+    ///
+    /// - Parameters:
+    ///   - machine: The machine on which to perform the event.
+    ///   - event: The event to send to the machine.
+    /// - Returns: The machine after the event has been executed.
     @discardableResult
     public static func <-!(machine: Machine<S, E>, event: E) -> Machine<S, E> {
         machine.tryEvent(event)
         return machine
     }
+    /// An operator to trigger changes by event, with optional data associated.
+    ///
+    /// - Parameters:
+    ///   - machine: The machine on which to perform the event.
+    ///   - tuple: The tuple of event and associated data to send to the machine.
+    /// - Returns: The machine after the event has been executed.
     @discardableResult
     public static func <-!(machine: Machine<S, E>, tuple: (E, Any?)) -> Machine<S, E> {
         machine.tryEvent(tuple.0, userInfo: tuple.1)

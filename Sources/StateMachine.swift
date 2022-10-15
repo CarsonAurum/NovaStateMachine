@@ -4,25 +4,50 @@
 
 import NovaCore
 
+/// A full state machine that can be triggered by either events or states.
+/// - Note: Use `Never` to ignore event-handling on this state machine.
 public final class StateMachine<S: StateProtocol, E: EventProtocol>: Machine<S, E> {
+    /// Closure-based route, mainly for `tryState()`
+    /// - An array of preferred destination states. `.s0 => [.s1, .s2]`
     public typealias StateRouteMapping = (_ from: S, _ userInfo: Any?) -> [S]?
+    /// Construct a new state machine with the given initial state and optional configuration closure.
+    ///
+    /// - Parameters:
+    ///   - state: The initial state for this state machine.
+    ///   - closure: The closure to execute to configure this state machine.
     public override init(state: S, _ closure: ((StateMachine) -> Void)? = nil) {
         super.init(state: state) {
             closure?($0 as! StateMachine<S, E>)
             return
         }
     }
+    /// Provide a new closure to add new routes and handlers.
+    /// - Parameter closure: The closure to modify this state machine.
     public override func configure(_ closure: (StateMachine<S, E>) -> Void) {
         closure(self)
     }
     // MARK: Has Route
-    
+    /// Check for added routes and route mappings.
+    ///
+    /// - Note: This method also checks for event-based routes.
+    /// - Parameters:
+    ///   - transition: The transition to check for.
+    ///   - userInfo: Optional data associated with the state change.
+    /// - Returns: `true` if this route exists, either in closure or in route. `false` otherwise.
     public func hasRoute(_ transition: Transition<S>, userInfo: Any? = nil) -> Bool {
         guard let from = transition.from.rawValue, let to = transition.to.rawValue else {
             return false
         }
         return self.hasRoute(from: from, to: to, userInfo: userInfo)
     }
+    /// Check for added routes and route mappings.
+    ///
+    /// - Note: This method also checks for event-based routes.
+    /// - Parameters:
+    ///   - from: The `from` state associated with the desired route.
+    ///   - to: The `to` state associated with the desired route.
+    ///   - userInfo: Optional data associated with the state change.
+    /// - Returns: `true` if this route exists, either in closure or in route. `false` otherwise.
     public func hasRoute(from: S, to: S, userInfo: Any? = nil) -> Bool {
         if _hasRouteInDict(from: from, to: to, userInfo: userInfo) {
             return true
@@ -34,9 +59,23 @@ public final class StateMachine<S: StateProtocol, E: EventProtocol>: Machine<S, 
     }
     
     // MARK: TryState
+    /// Determine if a change to the given state is valid.
+    ///
+    /// - Note: This method also checks for event-based routes.
+    /// - Parameters:
+    ///   - to: The desired destination state.
+    ///   - userInfo: Optional data associated with the state change.
+    /// - Returns: `true` if the route exists to the given state. `false` otherwise.
     public func canTryState(_ to: S, userInfo: Any? = nil) -> Bool {
         self.hasRoute(from: self.state, to: to, userInfo: userInfo)
     }
+    /// Perform a state transition.
+    ///
+    /// - Note: This method also tries event-based routes.
+    /// - Parameters:
+    ///   - to: The destination state for the transition.
+    ///   - userInfo: Optional data associated with the state change.
+    /// - Returns: `true` if the state change occurs, `false` otherwise.
     @discardableResult
     public func tryState(_ to: S, userInfo: Any? = nil) -> Bool {
         let from = self.state
