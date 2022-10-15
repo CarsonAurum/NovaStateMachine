@@ -1,3 +1,3 @@
 # NovaStateMachine
 
-A description of this package.
+A react-style state machine for Swift.
